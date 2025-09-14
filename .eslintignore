@@ -8,6 +8,7 @@ tmp
 .coverage_contracts
 artifacts
 build
+scripts
 cache
 coverage
 dist

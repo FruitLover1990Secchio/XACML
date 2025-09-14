@@ -15,6 +15,7 @@ types
 deployments
 tmp
 
+
 # files
 *.env
 *.log
@@ -23,3 +24,4 @@ tmp
 coverage.json
 pnpm-lock.yaml
 yarn.lock
+SmartPolicy*
