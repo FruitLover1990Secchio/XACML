@@ -23,7 +23,7 @@ for (let i = 0; i <= ratio; i++) {
 }
 let base = `
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { ethers, deployments} from "hardhat";
+import { ethers, fhevm, deployments} from "hardhat";
 import { SmartPolicy_${value_checks}_${i_vector[0]},SmartPolicy_${value_checks}_${i_vector[1]},SmartPolicy_${value_checks}_${i_vector[2]},SmartPolicy_${value_checks}_${i_vector[3]},SmartPolicy_${value_checks}_${i_vector[4]},SmartPolicy_${value_checks}_${i_vector[5]}} from "../types";
 import { expect } from "chai";
 import { writeFileSync } from "node:fs";
@@ -36,7 +36,7 @@ export type Signers = {
 
 describe("SmartPolicy_${value_checks}", function () {
   let signers: Signers;
-  const gasUsed: { [key: number]: bigint } = {};
+  const timePassed:number[] = [];
   let policy${i_vector[0]}: SmartPolicy_${value_checks}_${i_vector[0]};
   let policy${i_vector[1]}: SmartPolicy_${value_checks}_${i_vector[1]};
   let policy${i_vector[2]}: SmartPolicy_${value_checks}_${i_vector[2]};
@@ -109,13 +109,20 @@ for (const priv of i_vector) {
     steps = 3;
     progress("Calling evaluate...");
     const tx = await policy${priv}.connect(signers.bob).evaluate(signers.bob, amContractAddress);
-    const receipt = await tx.wait();  
-    if (receipt?.gasUsed != null){
-      gasUsed[${priv}] = receipt?.gasUsed;
-    }
+    await tx.wait();  
 
-    expect(true).to.eq(true);
-  });
+    const encrResult = await policy${priv}.connect(signers.bob).evaluationResult();
+
+    console.log("Starting the decryption for ", ${priv}, " private attributes");
+    const start = performance.now();
+    const decrypted = await fhevm.userDecryptEbool(encrResult, policyAddress${priv}, signers.bob);
+    const end = performance.now();
+    console.log("Time passed: ", end-start);
+
+    timePassed.push(end-start);
+
+    expect(decrypted).to.eq(true);
+  }).timeout(4*(10**5));
 `;
 }
 
@@ -123,10 +130,10 @@ base += `
 
   after(function () {
     let deploymentGas = "privateAttributes,gas used\\n";
-    for(const key in gasUsed) {
-      deploymentGas += key.toString() + "," + gasUsed[key].toString() + "\\n";
+    for(const key in timePassed) {
+      deploymentGas += key.toString() + "," + timePassed[key].toString() + "\\n";
     }
-    writeFileSync("./testResult/SmartPolicy_${value_checks}.csv", deploymentGas);    
+    writeFileSync("./testResult/SmartPolicy_${value_checks}_time.csv", deploymentGas);    
   });
 
 });

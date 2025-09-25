@@ -20,11 +20,10 @@ contract AMContract is SepoliaConfig {
         string memory attribute,
         address subject,
         externalEuint8 val,
-        bytes calldata inputProof
+        bytes memory inputProof
     ) public onlyContractOwner {
         privateAttributes[subject][attribute] = FHE.fromExternal(val, inputProof);
         FHE.allowThis(privateAttributes[subject][attribute]);
-        FHE.allow(privateAttributes[subject][attribute], msg.sender);
     }
 
     function createPublicStringAttribute(
@@ -39,7 +38,8 @@ contract AMContract is SepoliaConfig {
         publicIntAttributes[subject][attribute] = val;
     }
 
-    function getPrivateValue(address subject, string memory attribute) external view returns (euint8) {
+    function getPrivateValue(address subject, string memory attribute) external returns (euint8) {
+        FHE.allowTransient(privateAttributes[subject][attribute], msg.sender);
         return privateAttributes[subject][attribute];
     }
 
@@ -54,11 +54,5 @@ contract AMContract is SepoliaConfig {
     modifier onlyContractOwner() {
         require(msg.sender == owner, "Only the contract owner can call this function");
         _;
-    }
-
-    // nel modello di Damiano, AM rilascia sia i contratti con gli attributi(questo) sia
-    //i verificatori, deve essere l'AM a fornire a quest'ultimi l'accesso ai cyphertext
-    function allowVerifier(address subject, string memory attribute, address verifier) public onlyContractOwner {
-        FHE.allow(privateAttributes[subject][attribute], verifier);
     }
 }

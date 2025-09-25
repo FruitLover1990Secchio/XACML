@@ -1,4 +1,4 @@
-net="sepolia"
+net="localhost"
 
 mkdir testResult
 rm testResult/*
@@ -10,9 +10,10 @@ do
   echo "-----------------------"
 
   node scripts/SmartPolicy.js --checks $i
+  npx hardhat compile --network $net
   node scripts/SmartDeploy.js --checks $i
-  node scripts/SmartTest.js --checks $i
   npx hardhat deploy --network $net
+  node scripts/SmartTest.js --checks $i
   npx hardhat test test/SmartPolicy_$i.ts --network $net
 
   rm contracts/SmartPolicy_*

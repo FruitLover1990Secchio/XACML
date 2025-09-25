@@ -24,4 +24,4 @@ tmp
 coverage.json
 pnpm-lock.yaml
 yarn.lock
-SmartPolicy*
+SmartPolicy_*

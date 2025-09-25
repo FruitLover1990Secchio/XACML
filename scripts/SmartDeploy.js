@@ -19,6 +19,7 @@ const ratio = 5;
 const deploy_base = `
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { writeFileSync } from "node:fs";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
@@ -31,11 +32,15 @@ for (let i = 0; i <= ratio; i++) {
     deploy_base +
     `
 
-  const deployedSP = await deploy("SmartPolicy_${value_checks}_${total_private_functions}", {
-    from: deployer,
-    log: true,
-  });
-  console.log("Deployed by : ", deployer, " at ", deployedSP.address);
+  const deployedGas = (
+    await deploy("SmartPolicy_${value_checks}_${total_private_functions}", {
+      from: deployer,
+      log: true,
+    })
+  ).receipt?.gasUsed;
+  if (deployedGas != undefined) {
+    writeFileSync("./testResult/SmartDeploy_${value_checks}.csv", "${total_private_functions},"+deployedGas.toString()+"\\n", { flag:'a' });
+  }
 };
 export default func;
 func.id = "deploy_SmartPolicy_${value_checks}_${total_private_functions}"; // id required to prevent reexecution
@@ -43,3 +48,5 @@ func.tags = ["SmartPolicy_${value_checks}_${total_private_functions}"];
 `;
   writeFileSync(`./deploy/SmartPolicy_${value_checks}_${total_private_functions}.ts`, deploy_final);
 }
+
+writeFileSync(`./testResult/SmartDeploy_${value_checks}.csv`, "private attributes,gas used\n");
