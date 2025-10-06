@@ -25,3 +25,4 @@ coverage.json
 pnpm-lock.yaml
 yarn.lock
 SmartPolicy_*
+test*

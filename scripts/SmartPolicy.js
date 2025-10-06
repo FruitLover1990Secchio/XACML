@@ -22,14 +22,11 @@ pragma solidity ^0.8.24;
 
 import {FHE, euint8, externalEuint8, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import "hardhat/console.sol";
 
 interface IAM {
-    function getPrivateValue(address subject, string memory attribute) external returns (euint8);
-
-    function getPublicStringValue(address subject, string memory attribute) external view returns (bytes memory);
-
-    function getPublicIntValue(address subject, string memory attribute) external view returns (int);
+  function getPrivateValue(address subject, string memory attribute) external returns (euint8);
+  function getPublicStringValue(address subject, string memory attribute) external view returns (string memory);
+  function getPublicIntValue(address subject, string memory attribute) external view returns (int);
 }
 
 `;
@@ -73,13 +70,13 @@ for (let i = 0; i <= ratio; i++) {
     // bool result = evaluate() && evaluate() &&
     if (k == 1) {
       predicates_pub_and += ` evaluatePredicate_prize_enrollmentYear${k}(_subject, am);
-            ebool pub_res = FHE.asEbool(result);`;
+      ebool pub_res = FHE.asEbool(result);`;
     } else {
       predicates_pub_and += `evaluatePredicate_prize_enrollmentYear${k}(_subject, am) && `;
     }
     public_functions += `    function evaluatePredicate_prize_enrollmentYear${k}(address _subject, address am) public view returns (bool) {
-      int _year = IAM(am).getPublicIntValue(_subject, "enrollmentYear");
-      return _year >= 2;
+    int _year = IAM(am).getPublicIntValue(_subject, "enrollmentYear");
+    return _year >= 2;
   }
 `;
   }
@@ -99,36 +96,32 @@ for (let i = 0; i <= ratio; i++) {
     SmartPolicy +
     `
 contract SmartPolicy_${tick}_${total_private_functions} is SepoliaConfig {
-    address public owner;
-    ebool public evaluationResult;
-    uint8 public threshold = 27;
-
-    constructor() {
-        owner = msg.sender;
-    }
-
-    function evaluateTarget(address _subject, address am) public view returns (bool) {
-        console.log("Inside evaluateTarget");
-        // change the address with the real one
-        bytes memory _role = IAM(am).getPublicStringValue(_subject, "subjectRole");
-
-        return keccak256(_role) == keccak256(abi.encode("bachelor student"));
-    }
+  address immutable public owner;
+  ebool public evaluationResult;
+  uint8 public threshold = 27;
+  constructor() {
+    owner = msg.sender;
+  }
+  function evaluateTarget(address _subject, address am) public view returns (bool) {
+    // change the address with the real one
+    string memory _role = IAM(am).getPublicStringValue(_subject, "subjectRole");
+    return keccak256(abi.encode(_role)) == keccak256(abi.encode("bachelor student"));
+  }
 ` +
     public_functions +
     private_functions +
     `
-    function evaluate(address _subject, address am) public {
-        if (!evaluateTarget(_subject, am)) {
-            evaluationResult = FHE.asEbool(false); // NOT APPLICABLE
-        } else {
-            ${predicates_pub_and}
-            ${predicates_priv_and}
-            ${evaluationResult}
-        }
-        FHE.allowThis(evaluationResult);
-        FHE.allow(evaluationResult, msg.sender);
+  function evaluate(address _subject, address am) public {
+    if (!evaluateTarget(_subject, am)) {
+      evaluationResult = FHE.asEbool(false); // NOT APPLICABLE
+    } else {
+      ${predicates_pub_and}
+      ${predicates_priv_and}
+      ${evaluationResult}
     }
+    FHE.allowThis(evaluationResult);
+    FHE.allow(evaluationResult, msg.sender);
+  }
 }
 `;
 

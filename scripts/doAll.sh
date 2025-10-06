@@ -9,6 +9,7 @@ for i in $(seq 5 5 70)
 do
   echo "-----------------------"
 
+  export ATTRIBUTES_DEPLOYED=true
   node scripts/SmartPolicy.js --checks $i
   node scripts/SmartDeploy.js --checks $i
   node scripts/SmartTest.js --checks $i
@@ -22,3 +23,5 @@ do
 
   echo "-----------------------"
 done
+
+export ATTRIBUTES_DEPLOYED=false

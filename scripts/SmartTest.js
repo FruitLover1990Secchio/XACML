@@ -23,8 +23,8 @@ for (let i = 0; i <= ratio; i++) {
 }
 let base = `
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { ethers, deployments} from "hardhat";
-import { SmartPolicy_${value_checks}_${i_vector[0]},SmartPolicy_${value_checks}_${i_vector[1]},SmartPolicy_${value_checks}_${i_vector[2]},SmartPolicy_${value_checks}_${i_vector[3]},SmartPolicy_${value_checks}_${i_vector[4]},SmartPolicy_${value_checks}_${i_vector[5]}} from "../types";
+import { ethers, fhevm, deployments} from "hardhat";
+import { SmartPolicy_${value_checks}_${i_vector[0]},SmartPolicy_${value_checks}_${i_vector[1]},SmartPolicy_${value_checks}_${i_vector[2]},SmartPolicy_${value_checks}_${i_vector[3]},SmartPolicy_${value_checks}_${i_vector[4]},SmartPolicy_${value_checks}_${i_vector[5]}, AMContract} from "../types";
 import { expect } from "chai";
 import { writeFileSync } from "node:fs";
 
@@ -49,6 +49,7 @@ describe("SmartPolicy_${value_checks}", function () {
   let policyAddress${i_vector[3]}: string;
   let policyAddress${i_vector[4]}: string;
   let policyAddress${i_vector[5]}: string;
+  let amContract: AMContract;
   let amContractAddress: string;
   let step: number;
   let steps: number;
@@ -88,6 +89,7 @@ describe("SmartPolicy_${value_checks}", function () {
 
       const AMDeployement = await deployments.get("AMContract");
       amContractAddress = AMDeployement.address;
+      amContract = await ethers.getContractAt("AMContract", AMDeployement.address);
 
     } catch (e) {
       (e as Error).message += ". Call 'npx hardhat deploy --network localhost'";
@@ -102,6 +104,28 @@ describe("SmartPolicy_${value_checks}", function () {
     step = 0;
     steps = 0;
   });
+
+  it("creates attributes", async function(){
+    const valueStr = "bachelor student";
+
+    let tx = await amContract.connect(signers.alice).createPublicStringAttribute("subjectRole", signers.bob, valueStr);
+    await tx.wait();
+
+    const avgGrade = 28;
+    const encryptedValue = await fhevm
+      .createEncryptedInput(amContractAddress, signers.alice.address)
+      .add8(avgGrade)
+      .encrypt();
+
+    tx = await amContract
+      .connect(signers.alice)
+      .createPrivateAttribute("gradeAverage", signers.bob, encryptedValue.handles[0], encryptedValue.inputProof);
+    await tx.wait();
+
+
+    tx = await amContract.connect(signers.alice).createPublicIntAttribute("enrollmentYear", signers.bob, 2);
+    await tx.wait();
+  });
 `;
 for (const priv of i_vector) {
   base += `
@@ -114,8 +138,16 @@ for (const priv of i_vector) {
       gasUsed[${priv}] = receipt?.gasUsed;
     }
 
-    expect(true).to.eq(true);
-  });
+    const encrResult = await policy${priv}.connect(signers.bob).evaluationResult();
+    console.log("Starting the decryption for ", ${priv}, " private attributes");
+    const start = performance.now();
+    const decrypted = await fhevm.userDecryptEbool(encrResult, policyAddress${priv}, signers.bob);
+    const end = performance.now();
+    console.log("Time passed: ", end-start);
+
+
+    expect(decrypted).to.eq(true);
+  }).timeout(4*(10**5));
 `;
 }
 
