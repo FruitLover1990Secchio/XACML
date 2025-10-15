@@ -138,7 +138,7 @@ for (const priv of i_vector) {
   base += `
   it("Test policy with ${priv} private attributes}", async function () {
     let tx = await smartResource.connect(signers.RO).setPolicy(smartPolicyAddress${priv});
-    tx.wait();
+    await tx.wait();
 
     tx = await smartResource.connect(signers.SJ).requestAccess();
     const receipt = await tx.wait();
@@ -178,4 +178,4 @@ base += `
 });
 `;
 
-writeFileSync(`./test/SmartResource_${value_checks}.ts`, base);
+writeFileSync(`./test/SmartPolicy_${value_checks}.ts`, base);

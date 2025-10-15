@@ -9,13 +9,12 @@ for i in $(seq 5 5 70)
 do
   echo "-----------------------"
 
-  export ATTRIBUTES_DEPLOYED=true
   node scripts/SmartPolicy.js --checks $i
   node scripts/SmartDeploy.js --checks $i
   node scripts/SmartTest.js --checks $i
   npx hardhat deploy --network $net
   npx hardhat test test/SmartPolicy_$i.ts --network $net
-
+  export ATTRIBUTES_DEPLOYED=true
   rm contracts/SmartPolicy_*
   rm deploy/SmartPolicy_*
   rm test/SmartPolicy_$i.ts
