@@ -60,7 +60,7 @@ describe("SmartResource", function () {
     let tx = await amContract.connect(signers.AM).createPublicStringAttribute("subjectRole", signers.SJ, valueStr);
     await tx.wait();
 
-    const avgGrade = 28;
+    const avgGrade = 26;
     const encryptedValue = await fhevm
       .createEncryptedInput(amContractAddress, signers.AM.address)
       .add8(avgGrade)
