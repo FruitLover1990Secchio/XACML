@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.30;
 
 import {FHE, euint8, externalEuint8, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
@@ -39,7 +39,7 @@ contract AMContract is SepoliaConfig {
     }
 
     function getPrivateValue(address subject, string calldata attribute) external returns (euint8) {
-        FHE.allowTransient(privateAttributes[subject][attribute], msg.sender);
+        FHE.allow(privateAttributes[subject][attribute], msg.sender);
         return privateAttributes[subject][attribute];
     }
 

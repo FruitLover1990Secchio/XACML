@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.30;
 
 import {FHE, euint8} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
@@ -17,7 +17,7 @@ contract SmartResource is SepoliaConfig {
     event signalRequest(address subj, euint8 decision);
 
     constructor() {
-        owner == msg.sender;
+        owner = msg.sender;
     }
 
     function setPolicy(address newPolicy) public onlyContractOwner {
@@ -30,9 +30,11 @@ contract SmartResource is SepoliaConfig {
     }
 
     function requestAccess() public {
+        console.log("---Inside requestAccess---");
         euint8 decision = IP(policy).evaluatePolicy(msg.sender);
         FHE.allow(decision, owner);
         FHE.allow(decision, msg.sender);
+        console.log("Emitting decision");
 
         //send the request decision to the RO and subject
         emit signalRequest(msg.sender, decision);

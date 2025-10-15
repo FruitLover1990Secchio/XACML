@@ -3,6 +3,7 @@ import { ethers, deployments, fhevm } from "hardhat";
 import { AMContract, SmartResource, SmartPolicyExample } from "../types";
 import { expect } from "chai";
 import { FhevmType } from "@fhevm/hardhat-plugin";
+import { sign } from "node:crypto";
 
 /**
  * @dev
@@ -15,6 +16,13 @@ type CustomSigners = {
   RO: HardhatEthersSigner;
   SJ: HardhatEthersSigner;
 };
+
+enum RuleEffect {
+  PERMIT,
+  DENY,
+  NOTAPPLICABLE,
+  INDETERMINATE,
+}
 
 describe("SmartResource", function () {
   let signers: CustomSigners;
@@ -66,5 +74,30 @@ describe("SmartResource", function () {
     const enrollmentYear = 2;
     tx = await amContract.connect(signers.AM).createPublicIntAttribute("enrollmentYear", signers.SJ, enrollmentYear);
     await tx.wait();
+
+    tx = await smartResource.connect(signers.RO).setPolicy(smartPolicyAddress);
+    await tx.wait();
   }).timeout(4 * 10 ** 5);
+
+  it("should compute true", async function () {
+    const tx = await smartResource.connect(signers.SJ).requestAccess();
+    const logs = (await tx.wait())?.logs;
+
+    if (logs == undefined) {
+      return;
+    }
+    let encryptedResult;
+    for (const log of logs) {
+      if (log.address == smartResourceAddress) {
+        encryptedResult = log.args[1];
+      }
+    }
+    const decryptedResult = await fhevm.userDecryptEuint(
+      FhevmType.euint8,
+      encryptedResult,
+      smartResourceAddress,
+      signers.SJ,
+    );
+    expect(decryptedResult).to.eq(RuleEffect.PERMIT);
+  });
 });

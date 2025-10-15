@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.30;
 
 import {FHE, euint8, externalEuint8, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import "hardhat/console.sol";
 
 interface IAM {
     function getPrivateValue(address subject, string memory attribute) external returns (euint8);
@@ -34,25 +35,30 @@ contract SmartPolicyExample is SepoliaConfig {
         owner = msg.sender;
         am_contract = addr;
         grade_threshold = FHE.asEuint8(27);
+        FHE.allowThis(grade_threshold);
     }
 
-    function evaluateTarget(address _subject) public view returns (bool) {
+    function evaluateTarget(address _subject) internal view returns (bool) {
+        console.log("Inside evaluate target");
         string memory _role = IAM(am_contract).getPublicStringValue(_subject, "subjectRole");
         return keccak256(abi.encode(_role)) == keccak256(abi.encode("bachelor student"));
     }
 
     function evaluateCondition_prize_enrollmentYear(address _subject) internal view returns (bool) {
+        console.log("Inside enrollment year");
         int _year = IAM(am_contract).getPublicIntValue(_subject, "enrollmentYear");
         return _year >= year_threshold;
     }
 
     function evaluateCondition_prize_gradeAverage(address _subject) internal returns (ebool) {
+        console.log("Inside grade average");
         euint8 _inputs = IAM(am_contract).getPrivateValue(_subject, "gradeAverage");
 
         return FHE.gt(_inputs, grade_threshold);
     }
 
     function combining_algorithm(RuleResult memory rule1) internal returns (euint8) {
+        console.log("Inside combining algorithm");
         //ALGORITHM: FIRST APPLICABLE
         //urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:first-applicable
 
@@ -81,6 +87,7 @@ contract SmartPolicyExample is SepoliaConfig {
     }
 
     function evaluateRule_prize(address _subject) internal returns (RuleResult memory) {
+        console.log("Inside rulePrize");
         // evaluation of rule with RuleId="prize"
         // FunctionID = "urn:oasis:names:tc:xacml:1 .0:function:and"
         RuleResult memory res;
@@ -94,16 +101,17 @@ contract SmartPolicyExample is SepoliaConfig {
     }
 
     function evaluatePolicy(address _subject) external returns (euint8) {
+        console.log("Inside evaluatePolicy");
         euint8 evaluationResult;
         if (!evaluateTarget(_subject)) {
             evaluationResult = FHE.asEuint8(uint8(RuleEffect.NOTAPPLICABLE));
         } else {
-            // each Rule evaluation returns its result and its corrisponding effect
             evaluationResult = combining_algorithm(evaluateRule_prize(_subject));
         }
 
         FHE.allowThis(evaluationResult);
         FHE.allow(evaluationResult, msg.sender);
+        console.log("Sending evaluation result");
         return evaluationResult;
     }
 }

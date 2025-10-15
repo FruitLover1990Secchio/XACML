@@ -20,10 +20,13 @@ const deploy_base = `
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { writeFileSync } from "node:fs";
+import { deployments } from "hardhat";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployer } = await hre.getNamedAccounts();
+  const deployer = await hre.getUnnamedAccounts();
   const { deploy } = hre.deployments;
+
+  const amAddress = (await deployments.get("AMContract")).address;
 `;
 
 for (let i = 0; i <= ratio; i++) {
@@ -34,7 +37,8 @@ for (let i = 0; i <= ratio; i++) {
 
   const deployedGas = (
     await deploy("SmartPolicy_${value_checks}_${total_private_functions}", {
-      from: deployer,
+      args: [amAddress],
+      from: deployer[0],
       log: true,
     })
   ).receipt?.gasUsed;
