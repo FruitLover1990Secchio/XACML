@@ -24,72 +24,79 @@ for (let i = 0; i <= ratio; i++) {
 let base = `
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { ethers, fhevm, deployments} from "hardhat";
-import { SmartPolicy_${value_checks}_${i_vector[0]},SmartPolicy_${value_checks}_${i_vector[1]},SmartPolicy_${value_checks}_${i_vector[2]},SmartPolicy_${value_checks}_${i_vector[3]},SmartPolicy_${value_checks}_${i_vector[4]},SmartPolicy_${value_checks}_${i_vector[5]}, AMContract} from "../types";
+import { SmartResource, SmartPolicy_${value_checks}_${i_vector[0]},SmartPolicy_${value_checks}_${i_vector[1]},SmartPolicy_${value_checks}_${i_vector[2]},SmartPolicy_${value_checks}_${i_vector[3]},SmartPolicy_${value_checks}_${i_vector[4]},SmartPolicy_${value_checks}_${i_vector[5]}, AMContract} from "../types";
 import { expect } from "chai";
 import { writeFileSync } from "node:fs";
 
-export type Signers = {
-  alice: HardhatEthersSigner;
-  bob: HardhatEthersSigner;
-  carol: HardhatEthersSigner;
+import { FhevmType } from "@fhevm/hardhat-plugin";
+
+/**
+ * @dev
+ * - AM: Attribute Manager
+ * - RO: Resource Owner
+ * - SJ: Subject
+ */
+type CustomSigners = {
+  AM: HardhatEthersSigner;
+  RO: HardhatEthersSigner;
+  SJ: HardhatEthersSigner;
 };
 
-describe("SmartPolicy_${value_checks}", function () {
-  let signers: Signers;
-  const gasUsed: { [key: number]: bigint } = {};
-  let policy${i_vector[0]}: SmartPolicy_${value_checks}_${i_vector[0]};
-  let policy${i_vector[1]}: SmartPolicy_${value_checks}_${i_vector[1]};
-  let policy${i_vector[2]}: SmartPolicy_${value_checks}_${i_vector[2]};
-  let policy${i_vector[3]}: SmartPolicy_${value_checks}_${i_vector[3]};
-  let policy${i_vector[4]}: SmartPolicy_${value_checks}_${i_vector[4]};
-  let policy${i_vector[5]}: SmartPolicy_${value_checks}_${i_vector[5]};
-  let policyAddress${i_vector[0]}: string;
-  let policyAddress${i_vector[1]}: string;
-  let policyAddress${i_vector[2]}: string;
-  let policyAddress${i_vector[3]}: string;
-  let policyAddress${i_vector[4]}: string;
-  let policyAddress${i_vector[5]}: string;
+enum RuleEffect {
+  PERMIT,
+  DENY,
+  NOTAPPLICABLE,
+  INDETERMINATE,
+}
+
+describe("SmartResource_${value_checks}", function () {
+  let signers: CustomSigners;
+  let smartResource: SmartResource;
+  let smartResourceAddress: string;
   let amContract: AMContract;
   let amContractAddress: string;
-  let step: number;
-  let steps: number;
-
-  function progress(message: string) {
-    console.log(++step,"/",steps, " ", message);
-  }
+  const gasUsed: { [key: number]: bigint | undefined } = {};
+  let smartPolicyAddress${i_vector[0]}: string;
+  let smartPolicyAddress${i_vector[1]}: string;
+  let smartPolicyAddress${i_vector[2]}: string;
+  let smartPolicyAddress${i_vector[3]}: string;
+  let smartPolicyAddress${i_vector[4]}: string;
+  let smartPolicyAddress${i_vector[5]}: string;
 
   before(async function () {
 
     try {
-      console.log("Awaiting the deployments...");
 
-      const SPDeployement${i_vector[0]} = await deployments.get("SmartPolicy_${value_checks}_${i_vector[0]}");
-      policyAddress${i_vector[0]} = SPDeployement${i_vector[0]}.address;
-      policy${i_vector[0]} = await ethers.getContractAt("SmartPolicy_${value_checks}_${i_vector[0]}", SPDeployement${i_vector[0]}.address);
+      if(!fhevm.isMock){
+        console.log("Test suite build for local environment");
+        this.skip();
+      }
 
-      const SPDeployement${i_vector[1]} = await deployments.get("SmartPolicy_${value_checks}_${i_vector[1]}");
-      policyAddress${i_vector[1]} = SPDeployement${i_vector[1]}.address;
-      policy${i_vector[1]} = await ethers.getContractAt("SmartPolicy_${value_checks}_${i_vector[1]}", SPDeployement${i_vector[1]}.address);
+      let Deployement = await deployments.get("SmartPolicy_${value_checks}_${i_vector[0]}");
+      smartPolicyAddress${i_vector[0]} = Deployement.address;
 
-      const SPDeployement${i_vector[2]} = await deployments.get("SmartPolicy_${value_checks}_${i_vector[2]}");
-      policyAddress${i_vector[2]} = SPDeployement${i_vector[2]}.address;
-      policy${i_vector[2]} = await ethers.getContractAt("SmartPolicy_${value_checks}_${i_vector[2]}", SPDeployement${i_vector[2]}.address);
+      Deployement = await deployments.get("SmartPolicy_${value_checks}_${i_vector[1]}");
+      smartPolicyAddress${i_vector[1]} = Deployement.address;
 
-      const SPDeployement${i_vector[3]} = await deployments.get("SmartPolicy_${value_checks}_${i_vector[3]}");
-      policyAddress${i_vector[3]} = SPDeployement${i_vector[3]}.address;
-      policy${i_vector[3]} = await ethers.getContractAt("SmartPolicy_${value_checks}_${i_vector[3]}", SPDeployement${i_vector[3]}.address);
+      Deployement = await deployments.get("SmartPolicy_${value_checks}_${i_vector[2]}");
+      smartPolicyAddress${i_vector[2]} = Deployement.address;
 
-      const SPDeployement${i_vector[4]} = await deployments.get("SmartPolicy_${value_checks}_${i_vector[4]}");
-      policyAddress${i_vector[4]} = SPDeployement${i_vector[4]}.address;
-      policy${i_vector[4]} = await ethers.getContractAt("SmartPolicy_${value_checks}_${i_vector[4]}", SPDeployement${i_vector[4]}.address);
+      Deployement = await deployments.get("SmartPolicy_${value_checks}_${i_vector[3]}");
+      smartPolicyAddress${i_vector[3]} = Deployement.address;
 
-      const SPDeployement${i_vector[5]} = await deployments.get("SmartPolicy_${value_checks}_${i_vector[5]}");
-      policyAddress${i_vector[5]} = SPDeployement${i_vector[5]}.address;
-      policy${i_vector[5]} = await ethers.getContractAt("SmartPolicy_${value_checks}_${i_vector[5]}", SPDeployement${i_vector[5]}.address);
+      Deployement = await deployments.get("SmartPolicy_${value_checks}_${i_vector[4]}");
+      smartPolicyAddress${i_vector[4]} = Deployement.address;
 
-      const AMDeployement = await deployments.get("AMContract");
-      amContractAddress = AMDeployement.address;
-      amContract = await ethers.getContractAt("AMContract", AMDeployement.address);
+      Deployement = await deployments.get("SmartPolicy_${value_checks}_${i_vector[5]}");
+      smartPolicyAddress${i_vector[5]} = Deployement.address;
+
+      Deployement = await deployments.get("AMContract");
+      amContractAddress = Deployement.address;
+      amContract = await ethers.getContractAt("AMContract", Deployement.address);
+
+      Deployement = await deployments.get("SmartResource");
+      smartResourceAddress = Deployement.address;
+      smartResource = await ethers.getContractAt("SmartResource", Deployement.address);
 
     } catch (e) {
       (e as Error).message += ". Call 'npx hardhat deploy --network localhost'";
@@ -97,71 +104,78 @@ describe("SmartPolicy_${value_checks}", function () {
     }
 
     const ethSigners: HardhatEthersSigner[] = await ethers.getSigners();
-    signers = { alice: ethSigners[0], bob: ethSigners[1], carol: ethSigners[2] };
+    signers = { AM: ethSigners[0], RO: ethSigners[1], SJ: ethSigners[2] };
   });
 
-    beforeEach(async () => {
-    step = 0;
-    steps = 0;
-  });
 
-  it("creates attributes", async function(){
+it("should update attribute values", async function () {
+    if (process.env.ATTRIBUTES_DEPLOYED == "true") {
+      this.skip();
+    }
+
     const valueStr = "bachelor student";
 
-    let tx = await amContract.connect(signers.alice).createPublicStringAttribute("subjectRole", signers.bob, valueStr);
+    let tx = await amContract.connect(signers.AM).createPublicStringAttribute("subjectRole", signers.SJ, valueStr);
     await tx.wait();
 
     const avgGrade = 28;
     const encryptedValue = await fhevm
-      .createEncryptedInput(amContractAddress, signers.alice.address)
+      .createEncryptedInput(amContractAddress, signers.AM.address)
       .add8(avgGrade)
       .encrypt();
 
     tx = await amContract
-      .connect(signers.alice)
-      .createPrivateAttribute("gradeAverage", signers.bob, encryptedValue.handles[0], encryptedValue.inputProof);
+      .connect(signers.AM)
+      .createPrivateAttribute("gradeAverage", signers.SJ, encryptedValue.handles[0], encryptedValue.inputProof);
     await tx.wait();
 
-
-    tx = await amContract.connect(signers.alice).createPublicIntAttribute("enrollmentYear", signers.bob, 2);
+    const enrollmentYear = 2;
+    tx = await amContract.connect(signers.AM).createPublicIntAttribute("enrollmentYear", signers.SJ, enrollmentYear);
     await tx.wait();
-  });
+  }).timeout(4 * 10 ** 5);
 `;
 for (const priv of i_vector) {
   base += `
-  it("Test SmartPolicy${value_checks}_${priv}", async function () {
-    steps = 3;
-    progress("Calling evaluate...");
-    const tx = await policy${priv}.connect(signers.bob).evaluate(signers.bob, amContractAddress);
-    const receipt = await tx.wait();  
-    if (receipt?.gasUsed != null){
-      gasUsed[${priv}] = receipt?.gasUsed;
+  it("Test policy with ${priv} private attributes}", async function () {
+    let tx = await smartResource.connect(signers.RO).setPolicy(smartPolicyAddress${priv});
+    tx.wait();
+
+    tx = await smartResource.connect(signers.SJ).requestAccess();
+    const receipt = await tx.wait();
+    gasUsed[${priv}] = receipt?.gasUsed;
+    const logs = (receipt)?.logs;
+
+    if (logs == undefined) {
+      return;
     }
-
-    const encrResult = await policy${priv}.connect(signers.bob).evaluationResult();
-    console.log("Starting the decryption for ", ${priv}, " private attributes");
-    const start = performance.now();
-    const decrypted = await fhevm.userDecryptEbool(encrResult, policyAddress${priv}, signers.bob);
-    const end = performance.now();
-    console.log("Time passed: ", end-start);
-
-
-    expect(decrypted).to.eq(true);
-  }).timeout(4*(10**5));
+    let encryptedResult;
+    for (const log of logs) {
+      if (log.address == smartResourceAddress) {
+        encryptedResult = log.args[1];
+      }
+    }
+    const decryptedResult = await fhevm.userDecryptEuint(
+      FhevmType.euint8,
+      encryptedResult,
+      smartResourceAddress,
+      signers.SJ,
+    );
+    expect(decryptedResult).to.eq(RuleEffect.PERMIT);
+  }).timeout(4 * 10 * 10**5);
 `;
 }
 
 base += `
 
   after(function () {
-    let deploymentGas = "privateAttributes,gas used\\n";
+    let evaluationGas = "privateAttributes,gas used\\n";
     for(const key in gasUsed) {
-      deploymentGas += key.toString() + "," + gasUsed[key].toString() + "\\n";
+      evaluationGas += key.toString() + "," + gasUsed[key]==undefined?"undefined":gasUsed[key]?.toString() + "\\n";
     }
-    writeFileSync("./testResult/SmartPolicy_${value_checks}.csv", deploymentGas);    
+    writeFileSync("./testResult/SmartPolicy_${value_checks}.csv", evaluationGas);    
   });
 
 });
 `;
 
-writeFileSync(`./test/SmartPolicy_${value_checks}.ts`, base);
+writeFileSync(`./test/SmartResource_${value_checks}.ts`, base);

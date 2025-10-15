@@ -1,4 +1,4 @@
-net="sepolia"
+net="localhost"
 
 mkdir testResult
 rm testResult/*
